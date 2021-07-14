@@ -5,8 +5,16 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DocFromTableData"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="240" Width="607">
     <Grid>
-        
+        <Button x:Name="btnFileDialogSrc" Content="Выбрать файл данных" Margin="370,20,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="134" Height="23" Click="btnFileDialogSrc_Click"/>
+        <Button x:Name="btnFileSelectTemplate" Content="Выбрать шаблон" HorizontalAlignment="Left" Margin="370,57,0,0" VerticalAlignment="Top" Width="134" Height="23" Click="btnFileSelectTemplate_Click"/>
+        <Button x:Name="btnSelectFolderOnSave" Content="Выбрать место сохранения данных" HorizontalAlignment="Left" Margin="370,100,0,0" VerticalAlignment="Top" Width="205" Height="23" Click="btnSelectFolderOnSave_Click"/>
+        <Button x:Name="btnStartGenerateFiles" Content="СГЕНЕРИРОВАТЬ!!!" HorizontalAlignment="Left" Margin="370,140,0,0" VerticalAlignment="Top" Width="108" Click="btnStartGenerateFiles_Click" Height="22"/>
+        <TextBox x:Name="txtBoxPathFileSrcData" HorizontalAlignment="Left" Height="23" Margin="25,20,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="315"/>
+        <TextBox x:Name="txtBoxPathSelectTemplate" HorizontalAlignment="Left" Height="23" Margin="25,57,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="314"/>
+        <TextBox x:Name="txtBoxPathSelectOutputFolder" HorizontalAlignment="Left" Height="23" Margin="25,100,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="314"/>
+        <Label x:Name="lblStatusWork" Content="" HorizontalAlignment="Left" Margin="25,144,0,0" VerticalAlignment="Top" Width="210"/>
+
     </Grid>
 </Window>
