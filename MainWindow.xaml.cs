@@ -17,7 +17,6 @@ using Excel = Microsoft.Office.Interop.Excel;
 using System.Threading;
 using System.IO;
 using Microsoft.Win32;
-using System.Windows.Forms;
 
 namespace DocFromTableData
 {
@@ -27,11 +26,16 @@ namespace DocFromTableData
     public partial class MainWindow : System.Windows.Window
     {
 
-        private string pathSrcFile;
-        private string pathSrcTemplate;
-        private string pathOutputFolder;
+        private string pathSrcFile = "";
+        private string pathSrcTemplate = "";
+        private string pathOutputFolder = "";
 
-        public Dictionary<int, String[]> listUniversity;
+        private List<object> tablesSrcData;
+        //Словарь совместимости. На один столбец несколько закладок
+        private Dictionary<int, List<int>> dictCompatibility;
+        private Dictionary<int,string> dictBookmark;
+
+
         Word.Application oWordApp;
         Word.Document oWordDoc;
         //Excel.Application oExcelApp;
@@ -40,35 +44,99 @@ namespace DocFromTableData
         public MainWindow()
         {
             oWordApp = new Word.Application();
-            //oExcelApp = new Excel.Application();
-            listUniversity = new Dictionary<int, String[]>();
             InitializeComponent();
-            
+
         }
 
-        public bool readFromWordSrc()
+
+
+        public bool readFromWordSrcDoc()
         {
             oWordDoc = oWordApp.Documents.Open(pathSrcFile);
+            dictCompatibility = new Dictionary<int, List<int>>();
+            tablesSrcData = new List<object>();
+            Dictionary<int, string> dictTitleColumn;
+            List<Dictionary<int, string>> dictDataSrc;
+            Dictionary<string, object> tableData;
+            List<int> listIndex;
+            listTitleColumn.Items.Clear();
             //Получаем таблицу с именами Ректоров и названия университетов
-            string nameEstablishment;
-            string nameDirector;
+            //КАК-ТО РАЗДЕЛИТЬ ИНФУ ПО ТАБЛИЦАМ
             foreach (Word.Table table in oWordDoc.Tables)
             {
-                for (int i = 2; i < table.Rows.Count; i++)
+                tableData = new Dictionary<string, object>();
+                dictTitleColumn = new Dictionary<int, string>();
+                dictDataSrc = new List<Dictionary<int, string>>();
+                listIndex = new List<int>();
+                string bufText;
+                
+                
+                for (int i = 0; i < table.Columns.Count; i++)
                 {
-                    nameEstablishment = table.Cell(i, 2).Range.Text.Trim();
-                    nameDirector = table.Cell(i, 3).Range.Text.Trim(new char[]{'\r','\a'});
-                    listUniversity.Add(i -1, new string[] { nameEstablishment, nameDirector });
-                    Console.WriteLine($"{i-1}:\n Наименование вуза: {nameEstablishment} \n Имя Ректора/Директора: {nameDirector} \n");
+                    //Подумать над заменой магического числа 1
+                    bufText = table.Cell(1, i).Range.Text.Replace("\r\a","");
+                    if(bufText != "" && bufText != "№")
+                    {
+                        listIndex.Add(i);
+                        dictTitleColumn[i] = bufText;
+                        listTitleColumn.Items.Add(
+                            new TextBlock()
+                            {
+                                Text = bufText,
+                                TextWrapping = TextWrapping.Wrap
+                            }
+                        ); ;
+                    }
                 }
+                //Получаем данные только с тех столбцов, что были получены с заголовков
+                for (int i = 2; i <= table.Rows.Count; i++)
+                {
+                    dictDataSrc.Add(new Dictionary<int,string>());
+                    foreach (int index in listIndex)
+                    {
+                        dictDataSrc[i-2][index] = table.Rows[i].Cells[index].Range.Text.Replace("\r\a", "");
+                    }
+                    
+                }
+
+                tableData.Add("title",dictTitleColumn);
+                tableData.Add("data", dictDataSrc);
+
+                tablesSrcData.Add(tableData);
+            }
+            lblStatusWork.Content = "Данные источника считаны!";
+            oWordDoc.Close();
+            return true;
+
+        }
+
+
+        public bool readFromWordTemplateDoc()
+        {
+            oWordDoc = oWordApp.Documents.Open(pathSrcTemplate);
+            dictBookmark = new Dictionary<int, string>();
+            dictCompatibility = new Dictionary<int, List<int>>();
+            listChkBoxBookmarks.Items.Clear();
+            int i = 0;
+            foreach (Word.Bookmark item in oWordDoc.Bookmarks)
+            {
+                dictBookmark.Add(i, item.Range.Text);
+                listChkBoxBookmarks.Items.Add(new CheckBox()
+                {
+                    Tag = i,
+                    Content = item.Range.Text
+                });
+                i++;
             }
             oWordDoc.Close();
+            
             return true;
         }
 
+
         public bool writeToTemplate()
         {
-            foreach (KeyValuePair<int,String[]> infoUniversity in listUniversity)
+            foreach (KeyValuePair<int,String[]> infoUniversity in tablesSrcData)
             {
                 //TODO переделать считываниеы
                 oWordDoc =  oWordApp.Documents.Open(pathSrcTemplate);
@@ -78,8 +146,7 @@ namespace DocFromTableData
                 oWordDoc.SaveAs2($"{pathOutputFolder}\\{infoUniversity.Key}.docx");
                 Console.WriteLine($"Запись {infoUniversity.Key}.docx - Завершена!");
                 lblStatusWork.Content = $"Запись {infoUniversity.Key}.docx - Завершена!";
-
-
+ 
             }
             oWordDoc.Close();
             return true;
@@ -93,7 +160,7 @@ namespace DocFromTableData
             {
                 pathSrcFile = selectFilePicker.FileName;
                 txtBoxPathFileSrcData.Text = pathSrcFile;
-
+                readFromWordSrcDoc();
 
             }
         }
@@ -105,25 +172,33 @@ namespace DocFromTableData
             {
                 pathSrcTemplate = selectFilePicker.FileName;
                 txtBoxPathSelectTemplate.Text = pathSrcTemplate;
+                readFromWordTemplateDoc();
             }
         }
 
         private void btnSelectFolderOnSave_Click(object sender, RoutedEventArgs e)
         {
-            var selectFolderPicker = new FolderBrowserDialog();
-            selectFolderPicker.ShowDialog();
-            pathOutputFolder = selectFolderPicker.SelectedPath;
-            txtBoxPathSelectOutputFolder.Text = pathOutputFolder;
+            //var selectFolderPicker = new FolderBrowserDialog();
+            //selectFolderPicker.ShowDialog();
+            //pathOutputFolder = selectFolderPicker.SelectedPath;
+            //txtBoxPathSelectOutputFolder.Text = pathOutputFolder;
         }
 
         private void btnStartGenerateFiles_Click(object sender, RoutedEventArgs e)
         {
-            lblStatusWork.Content = "В процессе.";
-            Thread.Sleep(500);
-            readFromWordSrc();
-            writeToTemplate();
-            lblStatusWork.Content = "Завершено!";
-            oWordApp.Quit();
+            lblStatusWork.Content = "";
+            if (pathSrcFile != "" && pathSrcTemplate != "" && pathOutputFolder != "")
+            {
+                lblStatusWork.Content = "В процессе.";
+                Thread.Sleep(500);
+                writeToTemplate();
+                lblStatusWork.Content = "Завершено!";
+                oWordApp.Quit();
+            }
+            else
+            {
+                lblStatusWork.Content = "Не все пути указаны!";
+            }
         }
     }
 }
