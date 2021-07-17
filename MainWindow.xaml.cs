@@ -45,7 +45,6 @@ namespace DocFromTableData
         {
             oWordApp = new Word.Application();
             InitializeComponent();
-
         }
 
 
