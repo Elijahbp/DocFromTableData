@@ -10,7 +10,7 @@ using System.Windows;
 [assembly: AssemblyTitle("DocFromTableData")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Buchnev Ilya Pavlovich")]
 [assembly: AssemblyProduct("DocFromTableData")]
 [assembly: AssemblyCopyright("Copyright ©  2021")]
 [assembly: AssemblyTrademark("")]
@@ -19,7 +19,7 @@ using System.Windows;
 // Установка значения False для параметра ComVisible делает типы в этой сборке невидимыми
 // для компонентов COM. Если необходимо обратиться к типу в этой сборке через
 // из модели COM, установите атрибут ComVisible для этого типа в значение true.
-[assembly: ComVisible(false)]
+[assembly: ComVisible(true)]
 
 //Чтобы начать создание локализуемых приложений, задайте
 //<UICulture>CultureYouAreCodingWith</UICulture> в файле .csproj
