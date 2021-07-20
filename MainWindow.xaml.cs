@@ -30,30 +30,36 @@ namespace DocFromTableData
         private string pathSrcTemplate = "";
         private string pathOutputFolder = "";
 
-        private List<object> tablesSrcData;
+        private List<Dictionary<string,object>> tablesSrcData;
         //Словарь совместимости. На один столбец несколько закладок
         private Dictionary<int, List<int>> dictCompatibility;
         private Dictionary<int,string> dictBookmark;
+        List<int> listSelectedIndex;
 
 
         Word.Application oWordApp;
-        Word.Document oWordDoc;
         //Excel.Application oExcelApp;
         //Excel.Workbook oExcelWorkbook;
+        int selectedColumnBlockTag = int.MinValue;
+        int selectedColumnToTitle = 0;
+        //CheckBox selectedCheckBox;
+
 
         public MainWindow()
         {
             oWordApp = new Word.Application();
+            dictCompatibility = new Dictionary<int, List<int>>();
+            tablesSrcData = new List<Dictionary<string,object>>();
+            listSelectedIndex = new List<int>();
             InitializeComponent();
         }
 
 
 
-        public bool readFromWordSrcDoc()
+        public async void readFromWordSrcDoc()
         {
-            oWordDoc = oWordApp.Documents.Open(pathSrcFile);
-            dictCompatibility = new Dictionary<int, List<int>>();
-            tablesSrcData = new List<object>();
+            Word.Document oWordDoc = oWordApp.Documents.Open(pathSrcFile);
+            
             Dictionary<int, string> dictTitleColumn;
             List<Dictionary<int, string>> dictDataSrc;
             Dictionary<string, object> tableData;
@@ -61,97 +67,122 @@ namespace DocFromTableData
             listTitleColumn.Items.Clear();
             //Получаем таблицу с именами Ректоров и названия университетов
             //КАК-ТО РАЗДЕЛИТЬ ИНФУ ПО ТАБЛИЦАМ
-            foreach (Word.Table table in oWordDoc.Tables)
-            {
-                tableData = new Dictionary<string, object>();
-                dictTitleColumn = new Dictionary<int, string>();
-                dictDataSrc = new List<Dictionary<int, string>>();
-                listIndex = new List<int>();
-                string bufText;
-                
-                
-                for (int i = 0; i < table.Columns.Count; i++)
+            await Task.Run(() => {
+                foreach (Word.Table table in oWordDoc.Tables)
                 {
-                    //Подумать над заменой магического числа 1
-                    bufText = table.Cell(1, i).Range.Text.Replace("\r\a","");
-                    if(bufText != "" && bufText != "№")
-                    {
-                        listIndex.Add(i);
-                        dictTitleColumn[i] = bufText;
-                        listTitleColumn.Items.Add(
-                            new TextBlock()
-                            {
-                                Text = bufText,
-                                TextWrapping = TextWrapping.Wrap
-                            }
-                        ); ;
-                    }
-                }
-                //Получаем данные только с тех столбцов, что были получены с заголовков
-                for (int i = 2; i <= table.Rows.Count; i++)
-                {
-                    dictDataSrc.Add(new Dictionary<int,string>());
-                    foreach (int index in listIndex)
-                    {
-                        dictDataSrc[i-2][index] = table.Rows[i].Cells[index].Range.Text.Replace("\r\a", "");
-                    }
-                    
-                }
+                    tableData = new Dictionary<string, object>();
+                    dictTitleColumn = new Dictionary<int, string>();
+                    dictDataSrc = new List<Dictionary<int, string>>();
+                    listIndex = new List<int>();
+                    string bufText;
 
-                tableData.Add("title",dictTitleColumn);
-                tableData.Add("data", dictDataSrc);
 
-                tablesSrcData.Add(tableData);
-            }
-            lblStatusWork.Content = "Данные источника считаны!";
+                    for (int i = 0; i < table.Columns.Count; i++)
+                    {
+                        //Подумать над заменой магического числа 1
+                        bufText = table.Cell(1, i).Range.Text.Replace("\r", "").Replace("\a", "");
+                        if (bufText != "" && bufText != "№")
+                        {
+                            listIndex.Add(i);
+                            dictTitleColumn[i] = bufText;
+                        }
+                    }
+                    //Получаем данные только с тех столбцов, что были получены с заголовков
+                    for (int i = 2; i <= table.Rows.Count; i++)
+                    {
+                        dictDataSrc.Add(new Dictionary<int, string>());
+                        foreach (int index in listIndex)
+                        {
+                            //TODO - придумать что-то с волшебным числом 2!!!
+                            dictDataSrc[i - 2][index] = table.Rows[i].Cells[index].Range.Text.Replace("\r", "").Replace("\a","");
+                        }
+
+                    }
+
+                    tableData.Add("title", dictTitleColumn);
+                    tableData.Add("data", dictDataSrc);
+                    tablesSrcData.Add(tableData);
+                }
+            });
             oWordDoc.Close();
-            return true;
-
+            lblComboBox.Visibility = Visibility.Visible;
+            comboBoxTitles.Visibility = Visibility.Visible;
+            foreach (Dictionary<string,object> table in tablesSrcData)
+            {
+                Dictionary<int,string> titleData = (Dictionary<int, string>) table["title"];
+                foreach (KeyValuePair<int,string> content in titleData)
+                {
+                    listTitleColumn.Items.Add(getTextBlockColumnData(content.Value,content.Key));
+                    comboBoxTitles.Items.Add(getTextBlockColumnData(content.Value, content.Key));
+                }
+            }
+            lblComboBox.IsEnabled = true;
+            comboBoxTitles.IsEnabled = true;
+            lblStatusWork.Content = "Данные источника считаны!";
         }
 
 
-        public bool readFromWordTemplateDoc()
+
+        public async void readFromWordTemplateDoc()
         {
-            oWordDoc = oWordApp.Documents.Open(pathSrcTemplate);
+            Word.Document oWordDoc = oWordApp.Documents.Open(pathSrcTemplate);
             dictBookmark = new Dictionary<int, string>();
             dictCompatibility = new Dictionary<int, List<int>>();
             listChkBoxBookmarks.Items.Clear();
             int i = 0;
-            foreach (Word.Bookmark item in oWordDoc.Bookmarks)
+            await Task.Run(()=>
             {
-                dictBookmark.Add(i, item.Range.Text);
-                listChkBoxBookmarks.Items.Add(new CheckBox()
+                foreach (Word.Bookmark item in oWordDoc.Bookmarks)
                 {
-                    Tag = i,
-                    Content = item.Range.Text
-                });
-                i++;
-            }
+                    dictBookmark.Add(i, item.Range.Text.Replace("\r", "").Replace("\a", ""));
+                    i++;
+                }
+            });
             oWordDoc.Close();
-            
-            return true;
-        }
-
-
-        public bool writeToTemplate()
-        {
-            foreach (KeyValuePair<int,String[]> infoUniversity in tablesSrcData)
+            foreach (KeyValuePair<int,string> kvPair in dictBookmark)
             {
-                //TODO переделать считываниеы
-                oWordDoc =  oWordApp.Documents.Open(pathSrcTemplate);
-                oWordDoc.Bookmarks["FullNameFirst"].Range.Text= infoUniversity.Value[1];
-                oWordDoc.Bookmarks["FullNameSecond"].Range.Text = infoUniversity.Value[1];
-                oWordDoc.Bookmarks["UniversityTitle"].Range.Text = infoUniversity.Value[0];
-                oWordDoc.SaveAs2($"{pathOutputFolder}\\{infoUniversity.Key}.docx");
-                Console.WriteLine($"Запись {infoUniversity.Key}.docx - Завершена!");
-                lblStatusWork.Content = $"Запись {infoUniversity.Key}.docx - Завершена!";
- 
+                listChkBoxBookmarks.Items.Add(getCheckBoxBookmarks(kvPair.Value, kvPair.Key));
             }
-            oWordDoc.Close();
-            return true;
+
+
+
         }
 
+        public void generateDocuments()
+        {
+            int i = 1;
+            string nameBookmarks;
+            string dataColumn;
+            string titleDocument;
+            foreach (Dictionary<string,object> table in tablesSrcData)
+            {
+                   
+                foreach (Dictionary<int,string> rowData in (List<Dictionary<int, string>>)table["data"])
+                {
+                    Word.Document oWordDoc = oWordApp.Documents.Open(pathSrcTemplate);
+                    foreach (KeyValuePair<int, List<int>> kvPair in dictCompatibility)
+                    {
+                        foreach (int indexBookmarks in kvPair.Value)
+                        {
+                            nameBookmarks = dictBookmark[indexBookmarks];
+                            dataColumn = rowData[kvPair.Key];
+                            oWordDoc.Bookmarks[nameBookmarks].Range.Text = dataColumn;
+                        }
+                    }
+                    titleDocument = rowData[selectedColumnToTitle].Replace(" ", "_").Replace("\"","");
+                    if (titleDocument == "")
+                    {
+                        titleDocument = "empty_title_" + i;
+                        i++;
+                    }
+                    oWordDoc.SaveAs2($"{pathOutputFolder}\\{titleDocument}.docx");//TODO ПОМЕНЯТЬ
+                    oWordDoc.Close();
+                }
+            }
+            lblStatusWork.Content = $"Запись документов - Завершена!";
+        }
 
+        
         private void btnFileDialogSrc_Click(object sender, RoutedEventArgs e)
         {
             var selectFilePicker = new Microsoft.Win32.OpenFileDialog();
@@ -159,7 +190,7 @@ namespace DocFromTableData
             {
                 pathSrcFile = selectFilePicker.FileName;
                 txtBoxPathFileSrcData.Text = pathSrcFile;
-                readFromWordSrcDoc();
+                readFromWordSrcDoc(); 
 
             }
         }
@@ -177,10 +208,10 @@ namespace DocFromTableData
 
         private void btnSelectFolderOnSave_Click(object sender, RoutedEventArgs e)
         {
-            //var selectFolderPicker = new FolderBrowserDialog();
-            //selectFolderPicker.ShowDialog();
-            //pathOutputFolder = selectFolderPicker.SelectedPath;
-            //txtBoxPathSelectOutputFolder.Text = pathOutputFolder;
+           var selectFolderPicker = new System.Windows.Forms.FolderBrowserDialog();
+           selectFolderPicker.ShowDialog();
+           pathOutputFolder = selectFolderPicker.SelectedPath;
+           txtBoxPathSelectOutputFolder.Text = pathOutputFolder;
         }
 
         private void btnStartGenerateFiles_Click(object sender, RoutedEventArgs e)
@@ -190,13 +221,113 @@ namespace DocFromTableData
             {
                 lblStatusWork.Content = "В процессе.";
                 Thread.Sleep(500);
-                writeToTemplate();
+                generateDocuments();
                 lblStatusWork.Content = "Завершено!";
                 oWordApp.Quit();
             }
             else
             {
                 lblStatusWork.Content = "Не все пути указаны!";
+            }
+        }
+
+        private ListBoxItem getTextBlockColumnData(string content,int tag)
+        {
+            ListBoxItem listBoxItem = new ListBoxItem()
+            {
+                Name = "listBoxItem_" + tag,
+                Tag = tag,
+                Content = content,
+                //TextWrapping = TextWrapping.Wrap,
+            };
+            listBoxItem.Selected += selectItemListBoxColumData;
+            return listBoxItem;
+        }
+
+        private CheckBox getCheckBoxBookmarks(string content, int tag)
+        {
+            CheckBox checkBox = new CheckBox()
+            {
+                Name = "checkBox_" + tag,
+                Tag = tag,
+                Content = content,
+            };
+            checkBox.Checked += selectCheckBoxBookmarks;
+            checkBox.Unchecked += unselectCheckBoxBookmarks;
+            return checkBox;
+        }
+
+        private void selectItemListBoxColumData(object sender, RoutedEventArgs e)
+        {
+            ListBoxItem selectedColumnBlock = (ListBoxItem)sender;
+            if (selectedColumnBlockTag != (int)selectedColumnBlock.Tag)
+            {
+                selectedColumnBlockTag = (int)selectedColumnBlock.Tag;
+                //Корректно представляем выбранные заголовки у других столбцов (делаем недоступными)
+                List<int> selectedBookmarks = new List<int>();
+                foreach (KeyValuePair<int,List<int>> kvPair in dictCompatibility)
+                {
+                    // Если выбран столбец, у которого нет выбранных заголовков, все ранее выбраные заголовки скрываем от выбора, а те что привязаны к нему, и свободны - выводим
+                    if (kvPair.Key != selectedColumnBlockTag)
+                    {
+                        selectedBookmarks.AddRange(kvPair.Value);
+                    }
+                    
+                }
+                foreach (CheckBox checkBox in listChkBoxBookmarks.Items)
+                {
+                    if (selectedBookmarks.Contains((int)checkBox.Tag))
+                    {
+                        checkBox.IsEnabled = false;
+                    }
+                    else
+                    {
+                        checkBox.IsEnabled = true;
+                    }
+                }
+            }
+        }
+
+        private void selectedCombBoxColumnToTitle(object sender, RoutedEventArgs e)
+        {
+            selectedColumnToTitle = (int)((ListBoxItem)((ComboBox)sender).SelectedItem).Tag;
+        }
+
+        private void selectCheckBoxBookmarks(object sender, RoutedEventArgs e)
+        {
+            CheckBox selectedCheckBox = (CheckBox)sender;
+            if (selectedColumnBlockTag != int.MinValue) {
+                List<int> selectedBookmarks;
+                if (dictCompatibility.TryGetValue(selectedColumnBlockTag, out selectedBookmarks))
+                {
+                    selectedBookmarks.Add((int)selectedCheckBox.Tag);
+                }
+                else
+                {
+                    dictCompatibility.Add(selectedColumnBlockTag,new List<int>() { (int)selectedCheckBox.Tag});
+                }
+            }
+            else
+            {
+                selectedCheckBox.IsChecked = false;
+                lblStatusWork.Content = "Перед выбором загаловков, выберите столбец!";
+            }
+        }
+        private void unselectCheckBoxBookmarks(object sender, RoutedEventArgs e)
+        {
+            CheckBox selectedCheckBox = (CheckBox)sender;
+            if (selectedColumnBlockTag != int.MinValue)
+            {
+                List<int> selectedBookmarks;
+                if (dictCompatibility.TryGetValue(selectedColumnBlockTag, out selectedBookmarks))
+                {
+                    selectedBookmarks.Remove((int)selectedCheckBox.Tag);
+                    if(selectedBookmarks.Count == 0)
+                    {
+                        dictCompatibility.Remove(selectedColumnBlockTag);
+                        selectedColumnBlockTag = int.MinValue;
+                    }
+                }
             }
         }
     }
