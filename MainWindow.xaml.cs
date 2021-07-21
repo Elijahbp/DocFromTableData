@@ -37,7 +37,7 @@ namespace DocFromTableData
         List<int> listSelectedIndex;
 
 
-        Word.Application oWordApp;
+        
         //Excel.Application oExcelApp;
         //Excel.Workbook oExcelWorkbook;
         int selectedColumnBlockTag = int.MinValue;
@@ -47,7 +47,7 @@ namespace DocFromTableData
 
         public MainWindow()
         {
-            oWordApp = new Word.Application();
+            
             InitializeComponent();
         }
 
@@ -55,8 +55,9 @@ namespace DocFromTableData
 
         public async void readFromWordSrcDoc()
         {
-            Word.Document oWordDoc = oWordApp.Documents.Open(pathSrcFile);
             
+            Word.Application oWordApp = new Word.Application();
+            Word.Document oWordDoc = oWordApp.Documents.Open(pathSrcFile);
             Dictionary<int, string> dictTitleColumn;
             List<Dictionary<int, string>> dictDataSrc;
             Dictionary<string, object> tableData;
@@ -66,7 +67,7 @@ namespace DocFromTableData
             dictCompatibility = new Dictionary<int, List<int>>();
             comboBoxTitles.Items.Clear();
             listTitleColumn.Items.Clear();
-            foreach(CheckBox checkBox in listChkBoxBookmarks.Items)
+            foreach (CheckBox checkBox in listChkBoxBookmarks.Items)
             {
                 checkBox.IsChecked = false;
                 checkBox.IsEnabled = true;
@@ -74,8 +75,8 @@ namespace DocFromTableData
 
             //Получаем таблицу с именами Ректоров и названия университетов
             //КАК-ТО РАЗДЕЛИТЬ ИНФУ ПО ТАБЛИЦАМ
-            //await Task.Run(() => {
-            
+            await Task.Run(() => {
+
             //progressBar.Minimum = 0;
             //Maximum - сумма всех проходимых столбцов и строк в каждой таблице
             //progressBar.Maximum = 0;
@@ -84,7 +85,7 @@ namespace DocFromTableData
             //    progressBar.Maximum += table.Columns.Count;
             //    progressBar.Maximum += table.Rows.Count - 2;
             //}
-            
+
             foreach (Word.Table table in oWordDoc.Tables)
             {
                 tableData = new Dictionary<string, object>();
@@ -109,7 +110,7 @@ namespace DocFromTableData
                     foreach (int index in listIndex)
                     {
                         //TODO - придумать что-то с волшебным числом 2!!!
-                        dictDataSrc[i - 2][index] = table.Rows[i].Cells[index].Range.Text.Replace("\r", "").Replace("\a","");
+                        dictDataSrc[i - 2][index] = table.Rows[i].Cells[index].Range.Text.Replace("\r", "").Replace("\a", "");
                     }
                 }
 
@@ -117,16 +118,17 @@ namespace DocFromTableData
                 tableData.Add("data", dictDataSrc);
                 tablesSrcData.Add(tableData);
             }
-            //});
+            });
             oWordDoc.Close();
+            oWordApp.Quit();
             lblComboBox.Visibility = Visibility.Visible;
             comboBoxTitles.Visibility = Visibility.Visible;
-            foreach (Dictionary<string,object> table in tablesSrcData)
+            foreach (Dictionary<string, object> table in tablesSrcData)
             {
-                Dictionary<int,string> titleData = (Dictionary<int, string>) table["title"];
-                foreach (KeyValuePair<int,string> content in titleData)
+                Dictionary<int, string> titleData = (Dictionary<int, string>)table["title"];
+                foreach (KeyValuePair<int, string> content in titleData)
                 {
-                    listTitleColumn.Items.Add(getTextBlockColumnData(content.Value,content.Key));
+                    listTitleColumn.Items.Add(getTextBlockColumnData(content.Value, content.Key));
                     comboBoxTitles.Items.Add(getTextBlockColumnData(content.Value, content.Key));
                 }
             }
@@ -137,32 +139,35 @@ namespace DocFromTableData
 
 
 
-        public async void readFromWordTemplateDoc()
+        public void readFromWordTemplateDoc()
         {
+            //await Task.Run(() => {
+            Word.Application oWordApp = new Word.Application();
             Word.Document oWordDoc = oWordApp.Documents.Open(pathSrcTemplate);
             dictBookmark = new Dictionary<int, string>();
             listSelectedIndex = new List<int>();
             dictCompatibility = new Dictionary<int, List<int>>();
             listChkBoxBookmarks.Items.Clear();
             int i = 0;
-            //await Task.Run(()=>
-            //{
-                foreach (Word.Bookmark item in oWordDoc.Bookmarks)
-                {
-                    dictBookmark.Add(i, item.Name.Replace("\r", "").Replace("\a", ""));
-                    i++;
-                }
+            foreach (Word.Bookmark item in oWordDoc.Bookmarks)
+            {
+                dictBookmark.Add(i, item.Name.Replace("\r", "").Replace("\a", ""));
+                i++;
+            }
             //});
             oWordDoc.Close();
-            foreach (KeyValuePair<int,string> kvPair in dictBookmark)
+
+            oWordApp.Quit();
+            //});
+            foreach (KeyValuePair<int, string> kvPair in dictBookmark)
             {
                 listChkBoxBookmarks.Items.Add(getCheckBoxBookmarks(kvPair.Value, kvPair.Key));
             }
-
         }
 
         public async void generateDocuments()
         {
+            Word.Application oWordApp = new Word.Application();
             int i = 1;
             lblStatusWork.Content = "Запись файлов началась!";
             foreach (Dictionary<string,object> table in tablesSrcData)
@@ -193,6 +198,8 @@ namespace DocFromTableData
                 }
             }
             lblStatusWork.Content = $"Запись документов - Завершена!";
+            oWordApp.Quit();
+
         }
 
         
@@ -232,8 +239,6 @@ namespace DocFromTableData
             lblStatusWork.Content = "";
             if (pathSrcFile != "" && pathSrcTemplate != "" && pathOutputFolder != "")
             {
-                lblStatusWork.Content = "В процессе.";
-                Thread.Sleep(500);
                 generateDocuments();
                 lblStatusWork.Content = "Завершено!";
             }
@@ -353,15 +358,6 @@ namespace DocFromTableData
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            try
-            {
-                oWordApp.Quit();
-            }
-            finally
-            {
-
-            }
-
         }
     }
 }

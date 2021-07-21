@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DocFromTableData"
         mc:Ignorable="d"
-        Title="MainWindow" MinHeight="400" MinWidth="700" Height="163.333" Width="439.333" Closing="Window_Closing">
+        Title="DocFromTableData" MinHeight="400" MinWidth="700" Height="163.333" Width="439.333" Closing="Window_Closing">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="109"/>
@@ -19,7 +19,7 @@
         <Button x:Name="btnFileDialogSrc" Content="Выбрать файл данных" Margin="0,20,91,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="131" Height="23" Click="btnFileDialogSrc_Click" Grid.Column="2"/>
         <Button x:Name="btnFileSelectTemplate" Content="Выбрать шаблон" HorizontalAlignment="Right" Margin="0,48,112,0" VerticalAlignment="Top" Width="110" Height="23" Click="btnFileSelectTemplate_Click" Grid.Column="2"/>
         <Button x:Name="btnSelectFolderOnSave" Content="Выбрать место сохранения данных" Margin="0,76,10,0" VerticalAlignment="Top" Height="23" Click="btnSelectFolderOnSave_Click" Grid.Column="2" HorizontalAlignment="Right" Width="212"/>
-        <Button x:Name="btnStartGenerateFiles" Content="СГЕНЕРИРОВАТЬ!!!" Margin="63,0,60,21" VerticalAlignment="Bottom" Click="btnStartGenerateFiles_Click" Height="22" Grid.Column="2" Grid.Row="1"/>
+        <Button x:Name="btnStartGenerateFiles" Content="Сгенерировать!" Margin="63,0,60,21" VerticalAlignment="Bottom" Click="btnStartGenerateFiles_Click" Height="22" Grid.Column="2" Grid.Row="1"/>
         <TextBox x:Name="txtBoxPathFileSrcData" Height="23" Margin="23,20,10,0" TextWrapping="Wrap" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
         <TextBox x:Name="txtBoxPathSelectTemplate" Height="23" Margin="23,48,10,0" TextWrapping="Wrap" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
         <TextBox x:Name="txtBoxPathSelectOutputFolder" Height="23" Margin="23,76,10,0" TextWrapping="Wrap" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
@@ -28,8 +28,8 @@
         <ListBox x:Name="listChkBoxBookmarks" Margin="10,37,10,21" Grid.Column="1" Grid.Row="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
         <Label Content="Столбцы" Margin="25,6,0,0" Grid.Row="1" Height="26" VerticalAlignment="Top" HorizontalAlignment="Left" Width="58"/>
         <Label Content="Закладки" Grid.Column="1" HorizontalAlignment="Left" Margin="10,6,0,0" Grid.Row="1" VerticalAlignment="Top" Height="26" Width="60"/>
-        <ComboBox SelectionChanged="selectedCombBoxColumnToTitle" Name="comboBoxTitles" Grid.Column="2" Margin="19,0,17,194" Grid.Row="1" VerticalAlignment="Bottom" IsEnabled="False" Visibility="Hidden"/>
-        <Label Name="lblComboBox"  Content="Выберите основу заголовка" Grid.Column="2" HorizontalAlignment="Left" Margin="19,14,0,0" Grid.Row="1" VerticalAlignment="Top" IsEnabled="False" Visibility="Hidden"/>
+        <ComboBox SelectionChanged="selectedCombBoxColumnToTitle" Name="comboBoxTitles" Grid.Column="2" Margin="19,61,10,0" Grid.Row="1" IsEnabled="False" Visibility="Hidden" Height="22" VerticalAlignment="Top"/>
+        <Label Name="lblComboBox"  Content="Выберите основу имени выходного&#xD;&#xA;документа" Grid.Column="2" HorizontalAlignment="Left" Margin="19,14,0,0" Grid.Row="1" IsEnabled="False" Visibility="Hidden" Width="212" Height="42" VerticalAlignment="Top"/>
 
     </Grid>
 </Window>

@@ -190,5 +190,8 @@
   <ItemGroup>
     <Resource Include="fitness-training-schedule-table-documents.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Properties\fitness-training-schedule-table-documents.ico" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
